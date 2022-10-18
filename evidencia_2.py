@@ -1,8 +1,9 @@
 # Modulos
 
-import datetime
 import csv
+import datetime
 import os
+import openpyxl
 
 # Diccionarios
 
@@ -10,6 +11,8 @@ clientes_dict = dict()
 salas_dict = dict()
 reservas_dict = dict()
 turno_dict = {1: "Matutino", 2: "Vespertino", 3: "Nocturno"}
+
+consulta_reservaciones = list()
 
 if os.path.isfile("clientes.csv") and os.path.isfile("salas.csv") and os.path.isfile("reservas.csv"):
 
@@ -32,7 +35,7 @@ if os.path.isfile("clientes.csv") and os.path.isfile("salas.csv") and os.path.is
         next(lector)
         
         for folio, fecha, sala, cliente, evento, turno in lector:
-            salas_dict[int(folio)] = (fecha, int(sala), cliente, evento, turno)
+            reservas_dict[int(folio)] = [fecha, int(sala), cliente, evento, turno]
 else:
     print("\nEs la primera vez que se ejecuta el programa.")
 while True:
@@ -56,7 +59,7 @@ while True:
     [A] REGISTRAR NUEVA RESERVACION\n
     [B]	MODIFICAR DESCRIPCION DE UNA RESERVACIÓN\n
     [C]	CONSULTAR DISPONIBIBLIDAD DE SALAS PARA UNA FECHA\n
-    [D]	VOLVER AL MENU PRINCIPAL\n
+    [D]	VOLVER AL MENU PRINCIPAL
     """)
 
             opcion_menu_reservas = input("Elija una opcion: ")
@@ -87,13 +90,22 @@ while True:
                         print(f"\nCliente {clientes_dict[clave_de_cliente_reserva]} puede hacer la reservacion.")
                         break
                     else:
-                        print("Clave cliente no existe.")
+                        print("\nClave cliente no existe.")
                         continue
 
                 while True:
+                    
+                    print(f"\n{'Clientes registrados':^40}")
+                    print("-" * 40)
+                    print(f"{'Clave':<10}{'Nombre':<25}{'Cupo'}")
+                    print("-" * 40)
+                    for clave, nombre_cupo in salas_dict.items():
+                        print(f"{clave:<10}{nombre_cupo[0]:<25}{nombre_cupo[1]}")
+                    print("-" * 40)
+
                     clave_de_sala_reservas_capturada = input("\nEscriba el numero de sala: ")
 
-                    if clave_de_cliente_reserva_capturada.strip() == "":
+                    if clave_de_sala_reservas_capturada.strip() == "":
                         print("\nNo puede omitirse.")
                         continue
 
@@ -101,6 +113,7 @@ while True:
                         clave_de_sala_reservas = int(clave_de_sala_reservas_capturada)
                     except Exception:
                         print("\nNo es de tipo entero.")
+                        continue
 
                     if clave_de_sala_reservas in salas_dict:
                         print(f"\nSala {clave_de_sala_reservas} seleccionada.")
@@ -127,7 +140,7 @@ while True:
 
                     resta_fecha = fecha_reservacion - fecha_actual
 
-                    if resta_fecha.days < 2 or resta_fecha.days == 0:
+                    if resta_fecha.days < 2 and resta_fecha.days > 0:
                         print("\nLa reservación debe hacerse dos días antes del día elegido.")
                         continue
                     elif resta_fecha.days < 0:
@@ -137,6 +150,14 @@ while True:
                     break
 
                 while True:
+
+                    print(f"\n{'Clientes registrados':^40}")
+                    print("-" * 40)
+                    print("Clave\t\tTurno")
+                    print("-" * 40)
+                    for clave, turno in turno_dict.items():
+                        print(f"{clave}\t\t{turno}")
+                    print("-" * 40)
 
                     turno_reservacion_capturada = input("\nElija un turno por su clave: ")
 
@@ -151,8 +172,11 @@ while True:
                         continue
 
                     if turno_reservacion in turno_dict:
-                        print(f"Turno {turno_dict[turno_reservacion]} seleccionado.")
+                        print(f"\nTurno {turno_dict[turno_reservacion]} seleccionado.")
                         break
+                    else:
+                        print("\nEl turno no existe.")
+                        continue
                 while True:
 
                     for datos in reservas_dict.values():
@@ -178,7 +202,13 @@ while True:
 
             elif opcion_menu_reservas.upper() == "B":
                 while True:
-
+                    print(f"\n{'Modificar nombre':^50}")
+                    print("-" * 50)
+                    print(f"{'Folio':<10}{'Nombre evento'}")
+                    print("-" * 50)
+                    for folio, nombre_evento in reservas_dict.items():
+                        print(f"{folio:<10}{nombre_evento[3]}")
+                    print("-" * 50)
                     folio_editar_nombre = input("\nDime el folio de la reservacion que quiere editar el nombre: ")
 
                     if folio_editar_nombre.strip() == "":
@@ -190,21 +220,57 @@ while True:
                     except Exception:
                         print("\nEl dato no es de tipo entero.")
                         continue
-
-                    for folio, datos in reservas_dict.items():
-                        if folio_editar_nombre_int == folio:
-                            nombre_actualizado = input("\nEscribe el nuevo nombre del evento: ")
-                            datos[3] = nombre_actualizado
-                            break
-                        else:
-                            print("\nNo existe el folio proporcionado.")
-                            break
                     
-                    print("\nNombre editado.")
+                    if folio_editar_nombre_int in reservas_dict:
+                        for folio, datos in reservas_dict.items():
+                            if folio == folio_editar_nombre_int:
+                                nombre_actualizado = input("\nEscribe el nuevo nombre del evento: ")
+                                datos[3] = nombre_actualizado
+                                print("\nNombre editado.")
+                                break
+                    else:
+                        print("\nNo existe el folio.")
+                        continue
+                            
                     break
 
             elif opcion_menu_reservas.upper() == "C":
-                pass
+                while True:
+                    listas_ocupadas = list()
+                    lista_posibles = list()
+
+                    fecha_para_ver_disponibles_capturada = input("\nEscribe la fecha donde quieras ver la disponibilidad: ")
+
+                    if fecha_para_ver_disponibles_capturada.strip() == "":
+                        print("\nNo puede omitise")
+                        continue
+
+                    try:
+                        fecha_para_ver_disponibles = datetime.datetime.strptime(fecha_para_ver_disponibles_capturada, "%d/%m/%Y").date()
+                    except Exception:
+                        print("\nFormato de fecha no correcto.")
+                        continue
+
+                    for clave, valor in reservas_dict.items():
+                        fecha, sala, turno = (valor[0], valor[1], valor[4])
+                        if fecha == fecha_para_ver_disponibles_capturada:
+                            listas_ocupadas.append((sala, turno))
+                    
+                    reservas_ocupadas = set(listas_ocupadas)
+
+                    for sala in salas_dict:
+                        for turno in turno_dict:
+                            lista_posibles.append((sala, turno_dict[turno]))
+                    
+                    reservas_posibles = set(lista_posibles)
+
+                    reservaciones_disponibles = sorted(list(reservas_posibles - reservas_ocupadas))
+
+                    print(f"\n** Salas disponibles para renta el {fecha_para_ver_disponibles_capturada} **")
+                    print("\nSALA\t\tTURNO")
+                    for sala, turno in reservaciones_disponibles:
+                        print(f"{sala},{salas_dict[sala][0]}\t\t{turno}")
+                    break
             elif opcion_menu_reservas.upper() == "D":
                 break
             else:
@@ -225,6 +291,8 @@ while True:
             if opcion_menu_reportes.upper() == "A":
                 while True:
 
+                    consulta_reservaciones.clear()
+
                     fecha_a_consultar_capturada = input("\nFecha que desea consultar si hay reservaciones: ")
 
                     if fecha_a_consultar_capturada.strip() == "":
@@ -237,10 +305,9 @@ while True:
                         print("\nFormato de fecha no correcto.")
                         continue
 
-                    consulta_reservaciones = list()
-
+                    
                     for datos in reservas_dict.values():
-                        if fecha_reservacion_capturada == datos[0]:
+                        if fecha_a_consultar_capturada == datos[0]:
                             consulta_reservaciones.append([datos[1],datos[2],datos[3],datos[4]])
                             continue
                     if len(consulta_reservaciones) == 0:
@@ -258,7 +325,14 @@ while True:
                     break
 
             elif opcion_menu_reportes.upper() == "B":
-                pass
+                libro = openpyxl.Workbook()
+                hoja = libro["Sheet"] 
+                hoja.title = "Primera"
+                hoja.append(("sala", "cliente", "evento", "turno"))
+                for valores in consulta_reservaciones:
+                    hoja.append(valores)
+                libro.save("reservas_tabular.xlsx")
+                print("\nExportado a Excel correctamente.")
             elif opcion_menu_reportes.upper() == "C":
                 break
             else:
@@ -278,10 +352,9 @@ while True:
 
             print(f"\nSu clave es: {clave_de_cliente}")
 
-            print(clientes_dict)
-
             break
     elif opcion_menu.upper() == "D":
+
         while True:
 
             sala_nombre = input("\nNombre de sala: ")
@@ -289,6 +362,7 @@ while True:
             if sala_nombre.strip() == "":
                 print("\nNo puede omitirse.")
                 continue
+
             break
 
         while True:
@@ -305,7 +379,7 @@ while True:
                 print("\nNo es de tipo entero.")
             
             if cupo_de_sala <= 0:
-                print("\nNo puede ser menor a cero.")
+                print("\nDebe ser mayor a cero.")
                 continue
 
             clave_de_sala = max(salas_dict.keys(), default=0) + 1
@@ -313,8 +387,6 @@ while True:
             salas_dict[clave_de_sala] = (sala_nombre, cupo_de_sala)
 
             print(f"\nEl numero de sala es: {clave_de_sala}")
-
-            print(salas_dict)
 
             break
             
