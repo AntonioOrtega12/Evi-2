@@ -1,11 +1,7 @@
-# Modulos
-
 import csv
 import datetime
 import os
 import openpyxl
-
-# Diccionarios
 
 clientes_dict = dict()
 salas_dict = dict()
@@ -95,7 +91,7 @@ while True:
 
                 while True:
                     
-                    print(f"\n{'Clientes registrados':^40}")
+                    print(f"\n{'Salas registrados':^40}")
                     print("-" * 40)
                     print(f"{'Clave':<10}{'Nombre':<25}{'Cupo'}")
                     print("-" * 40)
@@ -267,9 +263,9 @@ while True:
                     reservaciones_disponibles = sorted(list(reservas_posibles - reservas_ocupadas))
 
                     print(f"\n** Salas disponibles para renta el {fecha_para_ver_disponibles_capturada} **")
-                    print("\nSALA\t\tTURNO")
+                    print(f"\n{'SALA':<20}{'TURNO':>20}")
                     for sala, turno in reservaciones_disponibles:
-                        print(f"{sala},{salas_dict[sala][0]}\t\t{turno}")
+                        print(f"{sala},{salas_dict[sala][0]:<20}{turno:>20}")
                     break
             elif opcion_menu_reservas.upper() == "D":
                 break
@@ -407,7 +403,8 @@ while True:
             grabador.writerow(("clave", "fecha", "sala", "cliente", "evento", "turno"))
             grabador.writerows([(folio, datos[0], datos[1], datos[2], datos[3], datos[4]) for folio, datos in reservas_dict.items()])
 
-        print("\nFin del programa.")
+        print("\nDatos preservados en CSV.")
+        print("\nFIN DEL PROGRAMA\n")
         break
     else:
         print("\nElija una opción correcta.")
